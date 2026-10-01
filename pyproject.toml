@@ -1,0 +1,160 @@
+# pyproject.toml — shot_video_creation 项目元信息 + 工具配置
+# 脚本运行时零第三方依赖；以下配置仅用于开发期静态检查/格式化/测试。
+
+[project]
+name = "shot-video-creation"
+version = "0.1.0"
+description = "火山方舟媒体生成 Skill 套件（Seedream 图 / 豆包 TTS / Seedance 视频）"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+authors = [{ name = "shot_video_creation contributors" }]
+keywords = ["codex", "skill", "volcengine", "ark", "seedream", "seed-tts", "seedance"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Multimedia",
+]
+# 运行时无依赖：脚本纯 stdlib。
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/<owner>/shot_video_creation"
+Issues = "https://github.com/<owner>/shot_video_creation/issues"
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Ruff：lint + format（替代 flake8/isort/black，单工具完成）
+# ──────────────────────────────────────────────────────────────────────────────
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"
+# 三个 skill 的 cred.py 行为一致，先不在 lint 范围里收紧；
+# 等抽公共模块后统一处理。
+extend-exclude = [
+    "**/__pycache__",
+    "**/.venv",
+    "**/dist",
+    "**/build",
+    "_shared/cred.py",  # P1: 共享模块仅 50 行，ruff 收紧前先跳过
+]
+
+[tool.ruff.lint]
+# 选一组平衡的规则：语法/未使用导入/可简化/路径安全/异常处理
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear（潜在 bug）
+    "UP",  # pyupgrade（建议改用新语法）
+    "SIM", # flake8-simplify
+    "PTH", # pathlib 替代 os.path（脚本里大量 Path，可顺手收紧）
+    "ERA", # eradicate commented-out code
+    "PL",  # pylint 常用子集
+]
+ignore = [
+    "E501",  # 行长度交给 ruff format，不二次报警
+    "PLR0913",  # argparse 长参数列表是合法的
+    "PLR2004",  # 魔数（视频时长阈值等业务常量）
+    "PLR0912",  # 复杂分支可接受（编排脚本）
+    "PLR0915",  # 同上
+    "B008",   # 函数调用出现在默认参数（FastAPI 风格；argparse 不触发）
+    "PTH123", # open() vs Path.open() —— 脚本里多用内置 open()，不强求
+    "UP038",  # isinstance(..., (X, Y)) 在 Python 3.10 上仍合法且更清晰
+]
+
+[tool.ruff.lint.per-file-ignores]
+# 测试文件允许未使用导入/魔术断言
+"tests/**/*.py" = ["F401", "F811", "PLR2004"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["aigc_common", "cred"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+docstring-code-format = true
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Mypy：strict 之外加几个关键开关
+# ──────────────────────────────────────────────────────────────────────────────
+
+[tool.mypy]
+python_version = "3.10"
+# 三个 skill 各有一个同名 cred.py，mypy 会报 duplicate module。
+# 显式列出真正想检查的脚本，把 cred.py 排除。
+files = [
+    "gen-img/scripts/gen.py",
+    "gen-tts/scripts/tts.py",
+    "gen-video/scripts/gen_volc.py",
+    "gen-video/scripts/aigc_common.py",
+    "_shared/cred.py",
+]  # P1：cred.py 已抽到 _shared/，三个 skill 共用
+# 三个 skill 各有一个同名 cred.py → 改为单一 _shared/cred.py，duplicate 问题消失
+strict = false
+warn_unused_ignores = true
+warn_redundant_casts = true
+no_implicit_optional = true
+check_untyped_defs = true
+ignore_missing_imports = true  # stdlib only，第三方包基本不会引入
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+check_untyped_defs = false
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Pytest
+# ──────────────────────────────────────────────────────────────────────────────
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+    "--showlocals",
+]
+# 不需要 mock 整个网络层；纯单元测试 + 烟雾测试
+markers = [
+    "network: marks tests as requiring network access (deselect with -m 'not network')",
+    "ffmpeg: marks tests as requiring ffmpeg/ffprobe on PATH",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Coverage（可选，pytest --cov 启用）
+# ──────────────────────────────────────────────────────────────────────────────
+
+[tool.coverage.run]
+source = [
+    "gen-img/scripts",
+    "gen-tts/scripts",
+    "gen-video/scripts",
+    "_shared",
+]
+omit = [
+    "**/__pycache__/*",
+    "_shared/cred.py",  # 仅 50 行，没必要覆盖
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]
+show_missing = true
+skip_covered = false
+fail_under = 0  # 烟雾测试阶段不强制覆盖率门槛

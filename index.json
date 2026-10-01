@@ -1,0 +1,39 @@
+{
+  "$schema": "https://example.invalid/schemas/skill-index.schema.json",
+  "name": "shot-video-creation",
+  "version": "0.2.0",
+  "description": "短视频生成 Skill 套件（图 / 语音 / Seedance）；火山方舟单一云端来源，纯 stdlib。",
+  "license": "MIT",
+  "skills": [
+    {
+      "name": "gen-img",
+      "path": "gen-img",
+      "entry": "gen-img/scripts/gen.py",
+      "skill_md": "gen-img/SKILL.md",
+      "model": "doubao-seedream-5-0-260128",
+      "endpoint": "https://ark.cn-beijing.volces.com/api/v3/images/generations",
+      "auth_env": ["IMG_API_KEY", "IMG_MODEL"],
+      "features": ["text-to-image", "image-edit", "multi-reference-fusion"]
+    },
+    {
+      "name": "gen-tts",
+      "path": "gen-tts",
+      "entry": "gen-tts/scripts/tts.py",
+      "skill_md": "gen-tts/SKILL.md",
+      "model": "seed-tts-2.0",
+      "endpoint": "https://openspeech.bytedance.com/api/v3/tts/unidirectional",
+      "auth_env": ["TTS_APP_ID", "TTS_ACCESS_KEY"],
+      "features": ["tts", "subtitle", "voice-clone"]
+    },
+    {
+      "name": "gen-video",
+      "path": "gen-video",
+      "entry": "gen-video/scripts/gen_volc.py",
+      "skill_md": "gen-video/SKILL.md",
+      "model": "doubao-seedance-2-0-fast-260128",
+      "endpoint": "https://ark.cn-beijing.volces.com/api/v3/contents/generations/tasks",
+      "auth_env": ["VIDEO_KEY"],
+      "features": ["text-to-video", "image-to-video", "reference-video", "prev-segment-tail-frame"]
+    }
+  ]
+}

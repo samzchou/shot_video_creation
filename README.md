@@ -35,12 +35,6 @@ python gen-video/scripts/gen_volc.py --prompt "橘猫在窗台打盹，午后阳
 > 直接返回 `MissingFrontmatter`，整个 Skill 被静默丢弃（不报错，也不进「Available skills」）。
 > PowerShell `[IO.File]::WriteAllText(..., [Text.Encoding]::UTF8)` 默认 **带 BOM**，
 > 必须用 `[Text.UTF8Encoding]::new($false)` 或 `Out-File -Encoding utf8NoBOM`。
->
-> 验证一行：
->
-> ```bash
-> python -c "import pathlib; b=pathlib.Path('gen-video/SKILL.md').read_bytes(); print('BOM!' if b.startswith(b'\xef\xbb\xbf') else 'OK')"
-> ```
 
 ## 凭据约定
 
@@ -63,7 +57,6 @@ python gen-video/scripts/gen_volc.py --prompt "橘猫在窗台打盹，午后阳
 - `<平台>/outputs/`
 
 `aigc_common.ensure_safe_output` 在 `gen-video` 里执行此校验，避免写入到工程根。
-
 
 ## 跨平台安装与发现
 
@@ -104,7 +97,47 @@ done
 > ⚠️ Claude Code 要求 `name:` 必须等于目录名。本仓库已经把目录改名 kebab-case 以满足此规则；
 > **不要**用 `cp -r .../gen_img` 这种旧名，否则会被拒绝加载。
 
-### 3. OpenCode
+### 3. 豆包桌面端（Windows / macOS）
+
+豆包桌面端的 Skill 文件夹路径：
+
+| 系统 | 路径 |
+|------|------|
+| **Windows** | `%LOCALAPPDATA%\Doubao\User Data\Default\.doubao\agent_mode\workspace\.user_skills\` |
+| **macOS** | `~/Library/Application Support/Doubao/Default/.doubao/agent_mode/workspace/.user_skills/` |
+| macOS 用户本地 | `~/Doubao/skills/` |
+
+也兼容 `~/.doubao/skills/` 和 `~/.codex/skills/`（自动 fallback）。
+
+**安装步骤（Windows / macOS）**：
+
+1. 把整个 `shot_video_creation/` 目录复制到上述路径
+2. 打开豆包桌面端 → 「技能·连接器·伙伴」 → 「我的技能」 → 「新建—上传技能」
+3. 选择「本地文件夹上传」，选 `shot-video-creation/`（含三个子目录）
+4. 上传完成后三个子 Skill 会自动出现在列表中
+
+如果你只想用单个子 Skill，可以单独上传 `gen-img/`、`gen-tts/` 或 `gen-video/` 文件夹。
+
+### 4. WorkBuddy（腾讯）
+
+WorkBuddy 支持以下安装方式：
+
+| 方式 | 操作 |
+|------|------|
+| **技能市场** | 打开 WorkBuddy → 「专家·技能·连接器」→「技能市场」→ 找到技能点击「+」安装 |
+| **上传 ZIP** | 点击「添加技能」→「上传技能」，选择本地 ZIP 包 |
+| **手动复制** | 将 Skill 文件夹复制到 `~/.workbuddy/skills/` 或 `{项目根目录}/.workbuddy/skills/` |
+
+**安装路径**：
+
+| 类型 | 路径 |
+|------|------|
+| 用户全局 | `~/.workbuddy/skills/{skill-name}/` |
+| 项目级 | `{项目根目录}/.workbuddy/skills/{skill-name}/` |
+
+安装完成后在 WorkBuddy 技能管理界面确认是否出现在列表中。
+
+### 5. OpenCode
 
 OpenCode 按优先级扫描多个根目录，**会自动 fallback 到 `.claude/skills/`**，所以上面的 Claude Code
 安装方式完全适用。如果你想用 OpenCode 专属目录：
@@ -115,33 +148,6 @@ git clone https://github.com/<owner>/shot_video_creation.git   ~/.config/opencod
 
 启动后用 `/skill` 命令查看「`shot-video-creation`」即可触发顶层 Skill（会引导到子 Skill）。
 
-### 4. 豆包桌面端（Windows）
-
-豆包桌面端的 Skill 文件夹路径：
-
-```
-%LOCALAPPDATA%\Doubao\User Data\Default\.doubao\agent_mode\workspace\.user_skills\
-```
-
-也兼容 `~/.doubao/skills/` 和 `~/.codex/skills/`（自动 fallback）。
-
-**安装步骤**：
-
-1. 把整个 `shot_video_creation/` 目录复制到上述路径
-2. 打开豆包桌面端 → 「技能·连接器·伙伴」 → 「我的技能」 → 「新建—上传技能」
-3. 选择「本地文件夹上传」，选 `shot-video-creation/`（含三个子目录）
-4. 上传完成后三个子 Skill 会自动出现在列表中
-
-如果你只想用单个子 Skill，可以单独上传 `gen-img/`、`gen-tts/` 或 `gen-video/` 文件夹。
-
-### 5. WorkBuddy（腾讯）
-
-```bash
-git clone https://github.com/<owner>/shot_video_creation.git   ~/.workbuddy/skills/shot-video-creation
-```
-
-或在 WorkBuddy 「技能市场」搜索后从 npx skills 安装（如果上架）。
-
 ### 命名映射速查
 
 | 看到 `name:` 字段 | 仓库路径 | 调用样例（Claude Code） |
@@ -150,7 +156,6 @@ git clone https://github.com/<owner>/shot_video_creation.git   ~/.workbuddy/skil
 | `gen-img` | `shot_video_creation/gen-img/SKILL.md` | `/gen-img` |
 | `gen-tts` | `shot_video_creation/gen-tts/SKILL.md` | `/gen-tts` |
 | `gen-video` | `shot_video_creation/gen-video/SKILL.md` | `/gen-video` |
-
 
 ## 开发
 
@@ -183,22 +188,17 @@ shot_video_creation/
 ├── gen-img/
 │   ├── SKILL.md
 │   └── scripts/
-│       ├── cred.py
 │       └── gen.py
 ├── gen-tts/
 │   ├── SKILL.md
 │   └── scripts/
-│       ├── cred.py
 │       └── tts.py
 └── gen-video/
     ├── SKILL.md
-    ├── config.json
     └── scripts/
         ├── aigc_common.py
-        ├── cred.py
         └── gen_volc.py
 ```
-
 
 ## 安全 / 凭据轮换
 
@@ -215,107 +215,6 @@ shot_video_creation/
 3. 验证：脚本会在 `cred.get(...)` 返回空串时 `die(...)`，直接跑一次看报错即可
 
 `config.json.example` 是占位符模板（可入库），`config.json` 是真实凭据（不入库）。
-
-
-## 常见踩坑：SKILL.md 不被 Codex 发现
-
-按 `codex-rs/ext/skills/src/parser.rs` 的解析逻辑，**SKILL.md 必须以 `---\n` 开头**。
-常见 BOM 来源与对应解法：
-
-| 写入方式 | 是否带 BOM | 备注 |
-|---|---|---|
-| PowerShell `[IO.File]::WriteAllText(..., [Text.Encoding]::UTF8)` | ❌ 带 | .NET `Encoding.UTF8` 默认带 BOM |
-| PowerShell `Out-File -Encoding utf8`（PS 5.1） | ❌ 带 | PS 5.1 默认带 BOM |
-| PowerShell `Out-File -Encoding utf8NoBOM`（PS 7+） | ✅ 不带 | 推荐 |
-| PowerShell `[IO.File]::WriteAllText(..., [Text.UTF8Encoding]::new($false))` | ✅ 不带 | PS 5.1 兼容 |
-| Python `pathlib.Path.write_text(..., encoding='utf-8')` | ✅ 不带 | 推荐 |
-| VS Code 右下角「Save with Encoding → UTF-8」（非 UTF-8 with BOM） | ✅ 不带 | 手动选编码 |
-
-**修复已有 BOM 文件**（一次到位）：
-
-```bash
-python -c "
-import pathlib
-for p in pathlib.Path('.').rglob('SKILL.md'):
-    b = p.read_bytes()
-    if b.startswith(b'\xef\xbb\xbf'):
-        p.write_bytes(b[3:])
-        print('stripped:', p)
-"
-```
-
-若 SKILL.md 不出现在「Available skills」列表，先跑这个排查：
-
-```python
-import re, pathlib
-for p in pathlib.Path('.').rglob('SKILL.md'):
-    raw = p.read_bytes()
-    bom = raw.startswith(b'\xef\xbb\xbf')
-    starts = bool(re.match(rb'\A---\n', raw))
-    print(f'{p}: BOM={bom}, starts_with_frontmatter={starts}')
-```
-
-如果 `BOM=True` 或 `starts_with_frontmatter=False`，按上表改写文件即可。
-
-## 发布到 GitHub
-
-仓库根目录有两个一键脚本（幂等、可重复运行、token 不入 git config）：
-
-| 文件 | 平台 | 用法 |
-|---|---|---|
-| `publish.ps1` | PowerShell / Windows | `\publish.ps1` 或 `\publish.ps1 -DryRun` |
-| `publish.sh` | Git Bash / WSL / macOS | `./publish.sh` 或 `./publish.sh --dry-run` |
-
-### 步骤
-
-1. **生成 Fine-grained PAT**（`Settings → Developer settings → Personal access tokens → Fine-grained tokens`）
-   - Repository access: **Only select repositories** → 选 `shot_video_creation`
-   - Permissions → Contents: **Read and write**（其他保持默认即可）
-2. **设置环境变量**（仅当前 PowerShell 会话，不会写盘）：
-   ```powershell
-   $env:GITHUB_TOKEN = "ghp_你的token"
-   ```
-3. **先 dry-run 预览**（不真正推送）：
-   ```powershell
-   .\publish.ps1 -DryRun
-   ```
-4. **正式发布**：
-   ```powershell
-   .\publish.ps1
-   ```
-   脚本会：
-   - 添加/验证 `remote.origin` 为 `https://github.com/samzchou/shot_video_creation.git`
-   - `git add -A`（基于已配置的 `.gitignore`）
-   - 首次运行：自动创建 `master` 分支的初始 commit
-   - 自动创建 `v0.1.0` tag（已存在则跳过）
-   - 通过 `https://x-access-token:$TOKEN@github.com/...` URL 推送 commit + tags
-   - 打印 GitHub Release URL 供确认
-5. **清理**（建议）：
-   ```powershell
-   Remove-Item Env:\GITHUB_TOKEN
-   ```
-
-### 失败排查
-
-| 症状 | 原因 | 修复 |
-|---|---|---|
-| `403 Forbidden` | PAT 权限不足 | 重新生成，确保 Contents = Read & Write |
-| `404 Not Found` | 仓库不存在 / URL 错 | 确认 `https://github.com/samzchou/shot_video_creation` 已建好 |
-| `refusing to merge unrelated histories` | 远程已有 commit | 加 `--allow-unrelated-histories` 或先 `git pull` |
-| `could not lock config file .git/config` | .git/ 被其他进程占用 | 关掉 Codex CLI / VS Code 等占用进程再试 |
-| `Support for password authentication was removed` | 用了旧版 classic PAT | 换成 Fine-grained token |
-
-### 验证推送结果
-
-```powershell
-# 本地
-git log --oneline -3
-git tag -l
-
-# 远程
-start https://github.com/samzchou/shot_video_creation
-```
-
 
 ## 许可证
 
